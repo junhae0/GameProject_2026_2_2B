@@ -20,29 +20,44 @@ public class Building : MonoBehaviour
 
     public BuildingEvents buildingEvents;
 
+    private DeliveryOrderSystem orderSystem;
+
     public void Start()
     {
         SetupBuilding();
+        orderSystem = FindFirstObjectByType<DeliveryOrderSystem>();
+        CreateNameTag();
     }
 
-    void HandleDriverService(DeliveryDriver driver)
+    void HandleDriverService(DeliveryDriver dirver)
     {
         switch (BuildingType)
         {
             case BuildingType.Restaurant:
-                Debug.Log($"{buildingName} 에서 음식을 픽업 했습니다.");
+                if (orderSystem != null)
+                {
+                    orderSystem.OnDriverEnteredRestaurant(this);
+                }
                 break;
 
             case BuildingType.Customer:
-                Debug.Log($"{buildingName} 배달 완료");
-                driver.CompleteDelivery();
+                if (orderSystem != null)
+                {
+                    orderSystem.OnDriverEnteredCustorm(this);
+                }
+                else
+                {
+                    dirver.CompleteDelivery();
+                }
                 break;
 
             case BuildingType.ChargingStation:
-                Debug.Log($"{buildingName} 에서 배터리를 충전 했습니다.");
-                driver.ChargeBattery();
+
+                dirver.ChargeBattery();
                 break;
         }
+
+        buildingEvents.OnServiceUsed?.Invoke(BuildingType);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -77,21 +92,35 @@ public class Building : MonoBehaviour
             {
                 case BuildingType.Restaurant:
                     mat.color = Color.red;
-                    buildingName = "음식점";
                     break;
 
                 case BuildingType.Customer:
                     mat.color = Color.green;
-                    buildingName = "고객 집";
                     break;
 
                 case BuildingType.ChargingStation:
                     mat.color = Color.yellow;
-                    buildingName = "충전소";
                     break;
             }
         }
         Collider col = GetComponent<Collider>();
         if (col != null) { col.isTrigger = true; }
+    }
+
+    void CreateNameTag()
+    {
+        //건물 위에 이름표 생성
+        GameObject nameTag = new GameObject("NameTag");
+        nameTag.transform.SetParent(transform);
+        nameTag.transform.localPosition = Vector3.up * 1.5f;
+
+        TextMesh textMesh = nameTag.AddComponent<TextMesh>();
+        textMesh.text = buildingName;
+        textMesh.characterSize = 0.2f;
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.color = Color.white;
+        textMesh.fontSize = 20;
+
+        nameTag.AddComponent<Billboard>();
     }
 }
